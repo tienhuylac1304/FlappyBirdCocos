@@ -1,54 +1,30 @@
-import { _decorator, Component, Node } from 'cc';
-import { EventManager } from './EventManager';
-const { ccclass, property } = _decorator;
+import { _decorator, Component, Node, EventTarget } from "cc";
+import { GameState } from "./GameState";
+import { EventManager } from "./EventManager";
+const { ccclass } = _decorator;
 
-@ccclass('GameManager')
+@ccclass("GameManager")
 export class GameManager extends Component {
-    is_playing: boolean = false;
-    is_pause: boolean = false;
-    is_end_game: boolean = false;
+  private static _instance: GameManager;
 
-    score: number = 0;
-
-    onLoad() {
-        EventManager.instance.on("start-game", this.onStartGame, this);
-
-        EventManager.instance.on("pause-game", this.onPauseGame, this);
-
-        EventManager.instance.on("end-game", this.onEndGame, this);
-
-        EventManager.instance.on("add-point", this.onAddPoint, this);
+  public static get Instance() {
+    if (!this._instance) {
+      this._instance = new GameManager();
     }
+    return this._instance;
+  }
 
-    onStartGame() {
-        this.is_playing = true;
-        this.is_pause = false;
-        this.is_end_game = false;
-        this.onGameStateChange()
-    }
+  private _state = GameState.READY;
 
-    onPauseGame() {
-        this.is_playing = false;
-        this.is_pause = true;
-        this.is_end_game = false;
-        this.onGameStateChange()
-    }
+  public get state() {
+    return this._state;
+  }
 
-    onEndGame() {
-        this.is_playing = false;
-        this.is_pause = false;
-        this.is_end_game = true;
-        this.onGameStateChange()
-    }
+  public changeState(newState: GameState) {
+    if (this._state === newState) return;
 
-    onAddPoint() {
+    this._state = newState;
 
-        this.score++;
-        EventManager.instance.emit("point-change", this.score);
-
-    }
-    onGameStateChange() {
-        EventManager.instance.emit("game-state-change", this.is_playing, this.is_pause, this.is_end_game);
-    }
+    EventManager.instance.emit("STATE_CHANGED", newState);
+  }
 }
-
