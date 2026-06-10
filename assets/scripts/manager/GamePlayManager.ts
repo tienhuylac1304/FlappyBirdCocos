@@ -1,4 +1,4 @@
-import { _decorator, Component, Node } from "cc";
+import { _decorator, Component, Node, sys } from "cc";
 import { EventManager } from "./EventManager";
 import { GameState } from "./GameState";
 import { GameManager } from "./GameManager";
@@ -8,8 +8,14 @@ const { ccclass } = _decorator;
 export class GamePlayManager extends Component {
   //Local variable
   private score: number = 0;
+  best_score: number = 0;
 
   onLoad() {
+    const saved_best_score = sys.localStorage.getItem("best_score");
+    if (saved_best_score) {
+      this.best_score = parseInt(saved_best_score);
+    }
+
     EventManager.instance.on("start-game", this.handleStartGame, this);
     EventManager.instance.on("game-over", this.handleGameOver, this);
     EventManager.instance.on("add-point", this.handleAddPoint, this);
@@ -17,6 +23,21 @@ export class GamePlayManager extends Component {
     EventManager.instance.on("STATE_CHANGED", this.handleStateChanged, this);
     EventManager.instance.on("restart-game", this.handleRestartGame, this);
     EventManager.instance.on("continue-game", this.handleResumeGame, this);
+  }
+
+  onDestroy() {
+    // Gỡ tất cả sự kiện khi Scene Gameplay bị hủy
+    EventManager.instance.off("start-game", this.handleStartGame, this);
+    EventManager.instance.off("game-over", this.handleGameOver, this);
+    EventManager.instance.off("add-point", this.handleAddPoint, this);
+    EventManager.instance.off("pause-game", this.handlePauseGame, this);
+    EventManager.instance.off("STATE_CHANGED", this.handleStateChanged, this);
+    EventManager.instance.off("restart-game", this.handleRestartGame, this);
+    EventManager.instance.off("continue-game", this.handleResumeGame, this);
+  }
+
+  start() {
+    GameManager.Instance.changeState(GameState.READY);
   }
   handleResumeGame() {
     GameManager.Instance.changeState(GameState.PLAYING);
@@ -30,7 +51,11 @@ export class GamePlayManager extends Component {
   }
   handleGameOver() {
     GameManager.Instance.changeState(GameState.GAMEOVER);
-    EventManager.instance.emit("end-game", this.score);
+    if (this.score > this.best_score) {
+      this.best_score = this.score; // Cập nhật kỷ lục mới
+      sys.localStorage.setItem("best_score", this.best_score.toString()); // Lưu vào bộ nhớ máy
+    }
+    EventManager.instance.emit("end-game", this.score, this.best_score);
   }
   handleStateChanged(state: GameState) {
     switch (state) {

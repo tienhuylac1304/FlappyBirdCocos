@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Label, sys, Button } from "cc";
+import { _decorator, Component, Node, Label, sys, Button, director } from "cc";
 import { EventManager } from "./EventManager";
 import { GameState } from "./GameState";
 const { ccclass, property } = _decorator;
@@ -8,6 +8,8 @@ export class UIController extends Component {
   //Ready UI
   @property({ type: Label, tooltip: "Label score in gameplay" })
   txt_score: Label = null;
+  @property({ type: Label, tooltip: "Label best score in gameplay" })
+  txt_best_score: Label = null;
   @property({ type: Node, tooltip: "Ready panel" })
   panel_ready: Node = null;
   //Game Over UI
@@ -25,9 +27,9 @@ export class UIController extends Component {
   panel_resume: Node = null;
 
   //local variable
-
+  best_score: number = 0;
   onLoad() {
-    this.panel_ready.active = true;
+    this.uiState(true, false, false, false, false, true);
     EventManager.instance.on(
       "update-gameplay-score",
       this.onUpdateGameplayScore,
@@ -42,7 +44,29 @@ export class UIController extends Component {
     );
     EventManager.instance.on("game-state-ready", this.handleReadyGame, this);
     EventManager.instance.on("resume-game", this.handleResumeGame, this);
+
+    EventManager.instance.on("go-to-menu", this.handleGoToMenu, this);
   }
+
+  onDestroy() {
+    // Gỡ tất cả sự kiện khi Node UI bị hủy (Chuyển scene)
+    EventManager.instance.off(
+      "update-gameplay-score",
+      this.onUpdateGameplayScore,
+      this,
+    );
+    EventManager.instance.off("end-game", this.handleEndGame, this);
+    EventManager.instance.off("game-state-paused", this.handlePauseGame, this);
+    EventManager.instance.off(
+      "game-state-playing",
+      this.handlePlayingGame,
+      this,
+    );
+    EventManager.instance.off("game-state-ready", this.handleReadyGame, this);
+    EventManager.instance.off("resume-game", this.handleResumeGame, this);
+    EventManager.instance.off("go-to-menu", this.handleGoToMenu, this);
+  }
+
   handleResumeGame() {
     console.log("resume game run");
     this.uiState(false, true, false, false, true, false);
@@ -51,12 +75,13 @@ export class UIController extends Component {
     this.uiState(true, false, false, false, false, true);
   }
   handlePlayingGame() {
+    this.updateGameplayBestScore();
     this.uiState(false, true, false, false, false, true);
   }
 
-  handleEndGame(score: number) {
+  handleEndGame(score: number, best_score: number) {
     this.uiState(false, false, false, true, false, false);
-    EventManager.instance.emit("update-end-game-score", score);
+    EventManager.instance.emit("update-end-game-score", score, best_score);
   }
 
   onUpdateGameplayScore(score: number) {
@@ -82,5 +107,19 @@ export class UIController extends Component {
     this.panel_end_game.active = panel_end_game;
     this.panel_resume.active = panel_resume;
     this.btn_pause.interactable = btn_pause;
+  }
+
+  handleGoToMenu() {
+    director.loadScene("game_menu");
+  }
+  getBestScore() {
+    const saved_best_score = sys.localStorage.getItem("best_score");
+    if (saved_best_score) {
+      this.best_score = parseInt(saved_best_score);
+    }
+  }
+  updateGameplayBestScore() {
+    this.getBestScore();
+    this.txt_best_score.string = this.best_score.toString();
   }
 }

@@ -1,6 +1,7 @@
 import {
   _decorator,
   Component,
+  director,
   instantiate,
   Node,
   Prefab,
@@ -30,13 +31,22 @@ export class BacgroundController extends Component {
   private bgWidth: number = 0;
 
   game_state: GameState;
+  scene_name: String;
+
+  is_bird_die: boolean = false;
 
   onLoad() {
     //init game events
     EventManager.instance.on("STATE_CHANGED", this.getGameState, this);
+    EventManager.instance.on("bird-die", this.isBirdDie, this);
+  }
+  onDestroy() {
+    EventManager.instance.off("STATE_CHANGED", this.getGameState, this);
+    EventManager.instance.off("bird-die", this.isBirdDie, this);
   }
 
   start() {
+    this.scene_name = director.getScene().name;
     this.game_state = GameManager.Instance.state;
     const uiTransform1 = this.bg1.getComponent(UITransform);
     this.bgWidth = uiTransform1.width;
@@ -49,14 +59,19 @@ export class BacgroundController extends Component {
   update(deltaTime: number) {
     // Normal moving speed
     const moveAmount = this.speed * deltaTime;
-    if (
-      this.game_state === GameState.PLAYING ||
-      this.game_state === GameState.READY
-    ) {
+    if (this.scene_name === "game_play") {
+      if (this.is_bird_die) return;
+      if (
+        this.game_state === GameState.PLAYING ||
+        this.game_state === GameState.READY
+      ) {
+        this.onBackgroundMove(moveAmount);
+      }
+      if (this.game_state === GameState.PLAYING) {
+        this.onPipeMove(moveAmount);
+      }
+    } else {
       this.onBackgroundMove(moveAmount);
-    }
-    if (this.game_state === GameState.PLAYING) {
-      this.onPipeMove(moveAmount);
     }
   }
 
@@ -133,9 +148,13 @@ export class BacgroundController extends Component {
   getGameState() {
     this.game_state = GameManager.Instance.state;
     if (this.game_state === GameState.READY) {
+      this.is_bird_die = false;
       if (this.pipe_list.length > 0) {
         this.resetPipes();
       }
     }
+  }
+  isBirdDie() {
+    this.is_bird_die = true;
   }
 }
