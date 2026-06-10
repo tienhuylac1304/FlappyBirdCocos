@@ -15,7 +15,8 @@ import {
   Tween,
   tween,
   view,
-  PhysicsSystem2D, // Đã thêm hệ thống vật lý
+  PhysicsSystem2D,
+  Animation, // Đã thêm hệ thống vật lý
 } from "cc";
 import { EventManager } from "../manager/EventManager";
 import { GameState } from "../manager/GameState";
@@ -87,6 +88,7 @@ export class BirdController extends Component {
       this,
     );
     EventManager.instance.on("STATE_CHANGED", this.getGameState, this);
+    EventManager.instance.on("bird-die-finished", this.showGameOverPanel, this);
   }
 
   update(deltaTime: number) {
@@ -104,6 +106,32 @@ export class BirdController extends Component {
       collider.off(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this);
       collider.off(Contact2DType.END_CONTACT, this.onEndContact, this);
     }
+    EventManager.instance.off(
+      "game-state-ready",
+      this.handleGameStateReady,
+      this,
+    );
+    EventManager.instance.off(
+      "game-state-playing",
+      this.handleGameStatePlaying,
+      this,
+    );
+    EventManager.instance.off(
+      "game-state-gameover",
+      this.handleGameStateGameOver,
+      this,
+    );
+    EventManager.instance.off(
+      "game-state-paused",
+      this.handleGameStatePaused,
+      this,
+    );
+    EventManager.instance.off("STATE_CHANGED", this.getGameState, this);
+    EventManager.instance.off(
+      "bird-die-finished",
+      this.showGameOverPanel,
+      this,
+    );
   }
 
   onBeginContact(
@@ -111,6 +139,7 @@ export class BirdController extends Component {
     otherCollider: Collider2D,
     contact: IPhysics2DContact | null,
   ) {
+    if (this.game_state !== GameState.PLAYING) return;
     let otherName = otherCollider.node.name;
 
     if (otherName !== "point_area") {
@@ -123,6 +152,7 @@ export class BirdController extends Component {
     otherCollider: Collider2D,
     contact: IPhysics2DContact | null,
   ) {
+    if (this.game_state !== GameState.PLAYING) return;
     let otherName = otherCollider.node.name;
 
     if (otherName === "point_area" && !this.is_dead) {
@@ -143,16 +173,21 @@ export class BirdController extends Component {
 
   handleGameOver() {
     this.is_dead = true;
+    EventManager.instance.emit("bird-die");
     this.rigiBodyState();
+  }
+  showGameOverPanel() {
     EventManager.instance.emit("game-over");
   }
 
   onScreenTap(event: EventTouch) {
+    if (this.is_dead) return;
     if (this.game_state === GameState.READY) this.startGame();
     this.handleJumpTrigger();
   }
 
   onSpaceBarPress(event: any) {
+    if (this.is_dead) return;
     if (event.keyCode === 32) {
       if (this.game_state === GameState.READY) this.startGame();
       this.handleJumpTrigger();
@@ -170,6 +205,8 @@ export class BirdController extends Component {
       // if (AudioManager.instance) {
       //   AudioManager.instance.playFly();
       // }
+      EventManager.instance.emit("bird-flying");
+      console.log("jumping");
     }
   }
 
@@ -242,6 +279,9 @@ export class BirdController extends Component {
 
     this.birdTween = tween(this.node)
       .sequence(
+        tween().call(() => {
+          EventManager.instance.emit("bird-flying");
+        }),
         tween().to(
           timeUp,
           {
@@ -253,6 +293,7 @@ export class BirdController extends Component {
           },
           { easing: "quadOut" },
         ),
+
         tween().to(timeDown, { position: this.init_pos }, { easing: "quadIn" }),
       )
       .repeatForever()

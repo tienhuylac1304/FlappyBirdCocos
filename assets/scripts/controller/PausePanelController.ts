@@ -8,4 +8,7 @@ export class PausePanelController extends Component {
     EventManager.instance.emit("resume-game");
     this.node.active = false;
   }
+  onMenuButtonClick() {
+    EventManager.instance.emit("go-to-menu");
+  }
 }
