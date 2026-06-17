@@ -1,5 +1,6 @@
 import { _decorator, Component, Node, Label } from "cc";
 import { EventManager } from "../manager/EventManager";
+import { AudioEvent, AudioType } from "../manager/AudioEnum";
 const { ccclass, property } = _decorator;
 
 @ccclass("GameOverPanelController")
@@ -29,9 +30,11 @@ export class GameOverPanelController extends Component {
     this.txt_best_score.string = best_score.toString();
   }
   onRestartButtonClick() {
+    EventManager.instance.emit(AudioEvent.PLAY_SOUND, AudioType.CLICK);
     EventManager.instance.emit("restart-game");
   }
   onMenuButtonClick() {
+    EventManager.instance.emit(AudioEvent.PLAY_SOUND, AudioType.CLICK);
     EventManager.instance.emit("go-to-menu");
   }
 }
