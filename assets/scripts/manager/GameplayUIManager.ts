@@ -1,6 +1,7 @@
 import { _decorator, Component, Node, Label, sys, Button, director } from "cc";
 import { EventManager } from "./EventManager";
 import { GameState } from "./GameState";
+import { AudioEvent, AudioType } from "./AudioEnum";
 const { ccclass, property } = _decorator;
 
 @ccclass("UIManager")
@@ -88,6 +89,7 @@ export class UIController extends Component {
     this.txt_score.string = score.toString();
   }
   onPauseGame() {
+    EventManager.instance.emit(AudioEvent.PLAY_SOUND, AudioType.CLICK);
     EventManager.instance.emit("pause-game");
   }
   handlePauseGame() {

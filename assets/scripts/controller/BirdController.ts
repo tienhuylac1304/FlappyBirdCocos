@@ -22,6 +22,7 @@ import { EventManager } from "../manager/EventManager";
 import { GameState } from "../manager/GameState";
 import { AudioManager } from "../manager/AudioManager";
 import { GameManager } from "../manager/GameManager";
+import { AudioEvent, AudioType } from "../manager/AudioEnum";
 const { ccclass, property } = _decorator;
 
 @ccclass("BirdController")
@@ -166,17 +167,18 @@ export class BirdController extends Component {
 
   private handleAddScore() {
     EventManager.instance.emit("add-point");
-    // if (AudioManager.instance) {
-    //   AudioManager.instance.playPoint();
-    // }
+    EventManager.instance.emit(AudioEvent.PLAY_SOUND, AudioType.POINT);
   }
 
   handleGameOver() {
     this.is_dead = true;
+    EventManager.instance.emit(AudioEvent.PLAY_SOUND, AudioType.HIT);
     EventManager.instance.emit("bird-die");
+
     this.rigiBodyState();
   }
   showGameOverPanel() {
+    EventManager.instance.emit(AudioEvent.PLAY_SOUND, AudioType.DIE);
     EventManager.instance.emit("game-over");
   }
 
@@ -202,10 +204,8 @@ export class BirdController extends Component {
     const rigidBody = this.rb;
     if (rigidBody) {
       rigidBody.linearVelocity = new Vec2(0, this.jumpVelocity);
-      // if (AudioManager.instance) {
-      //   AudioManager.instance.playFly();
-      // }
       EventManager.instance.emit("bird-flying");
+      EventManager.instance.emit(AudioEvent.PLAY_SOUND, AudioType.FLY);
       console.log("jumping");
     }
   }
@@ -281,6 +281,7 @@ export class BirdController extends Component {
       .sequence(
         tween().call(() => {
           EventManager.instance.emit("bird-flying");
+          EventManager.instance.emit(AudioEvent.PLAY_SOUND, AudioType.FLY);
         }),
         tween().to(
           timeUp,

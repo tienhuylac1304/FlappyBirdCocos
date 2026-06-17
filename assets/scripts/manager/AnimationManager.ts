@@ -18,7 +18,7 @@ export class AnimationManager extends Component {
     this.bird_anim.play("bird_flying");
   }
   handleBirdDie() {
-    this.bird_anim.stop;
+    this.bird_anim.stop();
     this.bird_anim.play("bird_die");
     this.bird_anim.once(
       Animation.EventType.FINISHED,
